@@ -155,6 +155,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ReadMe.md" />
+    <None Include="..\报告20180622-2006.diagsession" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
