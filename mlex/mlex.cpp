@@ -9,7 +9,7 @@
 int main()
 {
 
-	fstream fs("E:\\reg.lex",ios::in);
+	fstream fs("lex-test\\common.lex",ios::in);
 
 	char* test_strings[] = {
 		"joker",
@@ -24,9 +24,10 @@ int main()
 		"0.12",
 		"0.123",
 		"a.ddd",
-		"acdq",
-		"cds",
-		"cdsdd"
+		"acdqr",
+		"cds4",
+		"cdsdd",
+		"_bcde"
 	};
 
 	if (fs.good()) {

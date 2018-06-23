@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include "nfa.h"
 
 namespace mlex {
@@ -8,11 +9,13 @@ namespace mlex {
 	private:
 		map<char, shared_ptr<MlexDfaState>> _moveMap;
 		vector<shared_ptr<MlexNfaState>> _nfaStates;
+		uint32_t _nfaStatesSum;
 		uint32_t _stateId;
 		
+
 	public:
 		bool _final;
-
+		
 		/**
 		 * 构造一个DFA状态
 		 */
@@ -25,9 +28,13 @@ namespace mlex {
 		 * 构造一个DFA状态
 		 * @param	nfaStates		原始NFA的状态集
 		 */
-		MlexDfaState(vector<shared_ptr<MlexNfaState>>nfaStates) :_nfaStates(nfaStates) {
+		MlexDfaState(vector<shared_ptr<MlexNfaState>>nfaStates) :_nfaStates(move(nfaStates)) {
 			_final = false;
 			_stateId = _stateIdCounter++;
+			_nfaStatesSum = 0;
+			for (auto iter1 : _nfaStates) {
+				_nfaStatesSum += iter1->getStateId();
+			}
 		}
 
 		/**
@@ -35,6 +42,10 @@ namespace mlex {
 		 */
 		uint32_t getStateId() {
 			return _stateId;
+		}
+
+		uint32_t getNfaStatesSum() {
+			return _nfaStatesSum;
 		}
 
 		/**
@@ -59,14 +70,22 @@ namespace mlex {
 		 * @param	Input		Input输入字符
 		 */
 		shared_ptr<MlexDfaState> getMove(char Input) {
-			return _moveMap[Input];
+			//字符表中的输入
+			if (_moveMap[Input]) {
+				return _moveMap[Input];
+			}
+			//如果可以接受任意字符的话
+			else {
+				return _moveMap[-1];
+			}
 		}
 
 		//判断两个dfa状态是否等价
 		bool operator==(const MlexDfaState& Another) {
 
-			if (_nfaStates.size() != Another._nfaStates.size())
+			if (_nfaStates.size() != Another._nfaStates.size()) {
 				return false;
+			}
 
 			auto iter2 = begin(Another._nfaStates);
 			for (auto iter1:_nfaStates) {
@@ -83,11 +102,44 @@ namespace mlex {
 
 	private:
 		MlexNfa _nfa;
-		vector<shared_ptr<MlexDfaState>> _dfaStates;
+		map<uint32_t,vector<shared_ptr<MlexDfaState>>> _dfaStates;
+		shared_ptr<MlexDfaState> _startState;
 
 	public:
 		MlexDfa(MlexNfa Nfa) :_nfa(Nfa) {
 
+		}
+
+		vector<shared_ptr<MlexNfaState>>::iterator findEmplacePosition(vector<shared_ptr<MlexNfaState>>& v,shared_ptr<MlexNfaState>& dfa) {
+
+			if (v.size() == 0) {
+				return end(v);
+			}
+
+			if (v[0]->getStateId() > dfa->getStateId()) {
+				return begin(v);
+			}
+
+			auto startState = begin(v);
+			auto endState = end(v) - 1;
+			decltype(startState) midState;// = startState + (endState - startState) / 2;
+
+			while (startState <= endState) {
+
+				midState = startState + (endState - startState) / 2;
+				
+				if (dfa->getStateId() > (*midState)->getStateId()) {
+					startState = midState + 1;
+				}
+				else if (dfa->getStateId() < (*midState)->getStateId()) {
+					endState = midState - 1;
+				}
+				else {
+					return midState;
+				}
+			}
+
+			return startState;
 		}
 
 		/**
@@ -99,10 +151,11 @@ namespace mlex {
 		vector<shared_ptr<MlexNfaState>> getInputDfaState(char Input, vector<shared_ptr<MlexNfaState>>& OldVector,bool& Final) {
 
 			vector<shared_ptr<MlexNfaState>> newVector;
+			newVector.reserve(OldVector.size() * 4);
 
 			for (auto iter :OldVector) {
 				//对每个元素，求出move(Input)的集合
-				auto moveState = move(iter->getMove(Input));
+				auto moveState = iter->getMove(Input);
 				for (auto iter2 :moveState) {
 					//再对每个move(Input)求ε-closure(move(Input))
 					//这里返回的是引用，所以不要使用move
@@ -113,8 +166,12 @@ namespace mlex {
 							Final = true;
 						newVector.emplace_back(iter3);
 					}
-					//newVector.insert(end(newVector), make_move_iterator(begin(emptyState)), make_move_iterator(end(emptyState)));
+					//move(Input)本身也需要入栈
+					if (iter2->_final)
+						Final = true;
+					newVector.emplace_back(iter2);
 				}
+				
 			}
 
 			//排序
@@ -153,20 +210,24 @@ namespace mlex {
 			}), end(st_state));
 
 			//将起始节点的ε-closure构成的dfa状态节点压入栈中
-			auto newDfaState = move(shared_ptr<MlexDfaState>(new MlexDfaState(st_state)));
+			auto newDfaState = shared_ptr<MlexDfaState>(new MlexDfaState(st_state));
+
+			//保存起始DF状态，输入匹配从这里开始
+			_startState = shared_ptr<MlexDfaState>(newDfaState);
+
 			new_states.push(move(newDfaState));
 
 			while (!new_states.empty()) {
 
 				//弹出栈顶dfa状态节点
-				auto instack_state = move(new_states.top());
+				auto instack_state = new_states.top();
 				new_states.pop();
 
 				//针对每个输入字符，求出其ε-closure(move(Input))集合
 				for (auto iter : _nfa._char_tab) {
 
 					//取得ε-closure(move(Input))集合
-					st_state = getInputDfaState(iter, instack_state->getNfaStates(), final);
+					st_state = move(getInputDfaState(iter, instack_state->getNfaStates(), final));
 					if (st_state.size() == 0) {
 						continue;
 					}
@@ -177,21 +238,43 @@ namespace mlex {
 					if (final) {
 						newDfaState->_final = true;
 					}
+					final = false;
 
-					auto find = find_if(begin(_dfaStates), end(_dfaStates), [newDfaState](const shared_ptr<MlexDfaState> One) {
-						return (*One) == (*newDfaState);
-					});
-					//如果在dfa栈中不存在，则压入dfa栈
-					if (find == end(_dfaStates)) {
-						new_states.push(newDfaState);
-						instack_state->addMove(iter, newDfaState);
+					//用于确定新的DFA状态是否已经存在
+					if (_dfaStates.count(newDfaState->getNfaStatesSum()) != 0) {
+						vector<shared_ptr<MlexDfaState>>& v = _dfaStates[newDfaState->getNfaStatesSum()];
+						auto find = find_if(begin(v), end(v), [newDfaState](const shared_ptr<MlexDfaState> One) {
+							return (*One) == (*newDfaState);
+						});
+						//如果在dfa栈中不存在，则压入dfa栈
+						if (find == end(v)) {
+							instack_state->addMove(iter, newDfaState);
+							new_states.emplace(newDfaState);
+						}
+						else {
+							instack_state->addMove(iter, *find);
+						}
 					}
 					else {
-						instack_state->addMove(iter, *find);
+						instack_state->addMove(iter, newDfaState);
+						new_states.emplace(newDfaState);
 					}
-					//否则销毁这个dfa节点
 
-					_dfaStates.emplace_back(instack_state);
+					//否则销毁这个dfa节点
+					
+				}
+
+				//如果DFA状态集中包含单个DFA的NFA状态集合之和和当前DFA状态的NFA状态集合之和相同的元素
+				//这么设计是借助map内部高效的映射算法，来减少DFA状态比较的时间
+				if( _dfaStates.count(instack_state->getNfaStatesSum())){
+					vector<shared_ptr<MlexDfaState>>& v = _dfaStates[instack_state->getNfaStatesSum()];
+					v.emplace_back(instack_state);
+				}
+				//如果不包含就新建一个
+				else {
+					vector<shared_ptr<MlexDfaState>> v;
+					v.emplace_back(instack_state);
+					_dfaStates.emplace(pair<uint32_t, vector<shared_ptr<MlexDfaState>>>(instack_state->getNfaStatesSum(), v));
 				}
 			}
 		}
@@ -208,7 +291,7 @@ namespace mlex {
 		 */
 		bool validateString(string& s,string& re) {
 			size_t i = 0;
-			shared_ptr<MlexDfaState> dfa_state = _dfaStates[0]->getMove(s[i]);
+			shared_ptr<MlexDfaState> dfa_state = _startState->getMove(s[i]);
 			if (!dfa_state)
 				return false;
 			while (i != s.length() - 1) {

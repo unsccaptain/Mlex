@@ -87,7 +87,9 @@ namespace mlex {
 	
 	private:
 		//转态转换弧
-		multimap<char, shared_ptr<MlexNfaState>> _moveMap;
+		//multimap<char, shared_ptr<MlexNfaState>> _moveMap;
+		//基于这样一个事实，所有带非空串的状态转换都只会有一条弧
+		vector<shared_ptr<MlexNfaState>> _multiMap;
 		pair<char, shared_ptr<MlexNfaState>> _singleMap;
 		//状态ID
 		uint32_t _stateId;
@@ -97,6 +99,8 @@ namespace mlex {
 	public:
 		//确定当前状态是否是NFA的终态
 		bool _final;
+		//当前状态接受任意输入字符
+		bool _any;
 		string _oldre;
 
 		/**
@@ -121,10 +125,16 @@ namespace mlex {
 		 */
 		void addMove(char Input, shared_ptr<MlexNfaState> State) {
 			pair<char, shared_ptr<MlexNfaState>> newMove(Input, shared_ptr<MlexNfaState>(State));
-			//if (Input != 0) {
-			//	_singleMap = newMove;
-			//}
-			_moveMap.emplace(newMove);
+			if (Input != 0) {
+				_singleMap = newMove;
+				//接受任意输入
+				if (Input == -1) {
+					_any = true;
+				}
+			}
+			else {
+				_multiMap.emplace_back(newMove.second);
+			}
 		}
 
 		/**
@@ -135,7 +145,12 @@ namespace mlex {
 		 */
 		void addMove(char Input, shared_ptr<MlexNfaState> State, MlexClosureCount& CCount) {
 			pair<char, shared_ptr<MlexNfaState>> newMove(Input, shared_ptr<MlexNfaState>(State));
-			_moveMap.emplace(newMove);
+			if (Input != 0) {
+				_singleMap = newMove;
+			}
+			else {
+				_multiMap.emplace_back(newMove.second);
+			}
 		}
 
 		/**
@@ -143,29 +158,19 @@ namespace mlex {
 		 * @param	Input		输入字符
 		 */
 		vector<shared_ptr<MlexNfaState>> getMove(char Input) {
-			//vector<shared_ptr<MlexNfaState>> moveVector;
-
-			//if (Input == 0) {
-			//	for_each(_moveMap.lower_bound(Input), _moveMap.upper_bound(Input), [&moveVector](auto iter) {
-			//		moveVector.emplace_back(shared_ptr<MlexNfaState>(iter.second));
-			//	});
-			//}
-			//else  {
-			//	
-			//	if (_singleMap.second) {
-			//		for_each(_moveMap.lower_bound(Input), _moveMap.upper_bound(Input), [&moveVector, this](auto iter) {
-			//			moveVector.emplace_back(shared_ptr<MlexNfaState>(this->_singleMap.second));
-			//		});
-			//		printf("moveVector:%d\n", moveVector.size());
-			//	}
-			//}
-			//return moveVector;
-
-			vector<shared_ptr<MlexNfaState>> moveVector;
-			for_each(_moveMap.lower_bound(Input), _moveMap.upper_bound(Input), [&moveVector](auto iter) {
-				moveVector.emplace_back(shared_ptr<MlexNfaState>(iter.second));
-			});
-			return moveVector;
+			
+			if (Input == 0) {
+				return _multiMap;
+			}
+			else {
+				vector<shared_ptr<MlexNfaState>> moveVector;
+				if (_singleMap.second) {
+					if ((_singleMap.first == Input) || (_singleMap.first == -1)) {
+						moveVector.emplace_back(shared_ptr<MlexNfaState>(_singleMap.second));
+					}
+				}
+				return moveVector;
+			}
 		}
 
 		/**
@@ -178,7 +183,7 @@ namespace mlex {
 				return _emptyClosure;
 			}
 
-			vector<shared_ptr<MlexNfaState>> v_first = move(getMove(0));
+			vector<shared_ptr<MlexNfaState>> v_first = getMove(0);
 			stack<shared_ptr<MlexNfaState>> s_prep;
 
 			//将直接ε弧对应的边灌到stack中
@@ -188,10 +193,10 @@ namespace mlex {
 			//不断弹出es中的元素
 			while (!s_prep.empty()) {
 				//获取栈顶元素的所有ε弧对应的边
-				shared_ptr<MlexNfaState> top = move(s_prep.top());
+				shared_ptr<MlexNfaState> top = s_prep.top();
 				s_prep.pop();
 
-				v_first = move(top->getMove(0));
+				v_first = top->getMove(0);
 				_emptyClosure.emplace_back(top);
 
 				for (auto iter:v_first) {
@@ -506,7 +511,7 @@ namespace mlex {
 			//循环遍历正则表达式并构造表达式的后缀形式
 			for (size_t i = 0;i < re.length();i++) {
 
-				if (isLetter(re[i]) || isLetter(re[i])) {
+				if (isLetter(re[i]) || isNumberic(re[i])) {
 
 					//向字母表添加元素
 					_char_tab.emplace_back(re[i]);
@@ -592,6 +597,18 @@ namespace mlex {
 					workStack.emplace_back(createBasicStateDiagram(re[i]));
 					break;
 				}
+				//任意字符匹配运算符
+				case '.':
+				{
+					//如果接受任意字符，则用-1标识
+					//但NFA的-1和DFA的-1不是同一个概念
+					//NFA中-1标识任意合法字符，即(32,127)
+					//DNF中表示除了字母表中的其他任意合法字符
+					//否则DFA会出现多重映射
+					_char_tab.emplace_back(-1);
+					workStack.emplace_back(createBasicStateDiagram(-1));
+					break;
+				}
 				default:
 					break;
 				}
@@ -632,20 +649,17 @@ namespace mlex {
 					switch (opt->_opType)
 					{
 					case MlexReOpTypes::closure:
-						if (effSelect.size() != 0) {
-							handlerSelect(valStack, effSelect);
-						}
 						handlerClosure(valStack, opt);
 						break;
 					case MlexReOpTypes::contact:
-						if (effSelect.size() != 0) {
-							handlerSelect(valStack, effSelect);
-						}
 						handlerContact(valStack);
 						break;
 					case MlexReOpTypes::select:
 						effSelect.emplace_back(valStack.top());
 						valStack.pop();
+						effSelect.emplace_back(valStack.top());
+						valStack.pop();
+						handlerSelect(valStack, effSelect);
 						break;
 					default:
 						break;
@@ -678,7 +692,8 @@ namespace mlex {
 			_char_tab.erase(unique(_char_tab.begin(), _char_tab.end()), _char_tab.end());
 
 			//所有re生成的NFA进行选择运算
-			_main_diagram= MlexNfaStateDiagram::select(reSds);
+			_main_diagram = move(MlexNfaStateDiagram::select(reSds));
+			//_main_diagram->getEndState()->_final = true;
 
 			return _main_diagram;
 		}

@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="lex-test">
+      <UniqueIdentifier>{acc3d952-4fed-4ab3-bfa7-3158138ef7dc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -41,5 +44,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ReadMe.md" />
+    <None Include="lex-test\common.lex">
+      <Filter>lex-test</Filter>
+    </None>
   </ItemGroup>
 </Project>
