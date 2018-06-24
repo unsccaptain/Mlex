@@ -5,6 +5,39 @@
 
 namespace mlex {
 
+	static uint32_t _dfaStateCounter = 0;
+	static uint32_t _dfaSimpleStateCounter = 0;
+
+	//简化的DFA状态
+	class MlexDfaSimpleState {
+	private:
+		uint32_t _stateId;
+		map<char, shared_ptr<MlexDfaSimpleState>> _moveMap;
+
+	public:
+		bool _final;
+		string _oldre;
+
+		MlexDfaSimpleState() {
+			_final = false;
+			_stateId = _dfaSimpleStateCounter++;
+		}
+
+		uint32_t getStateId() {
+			return _stateId;
+		}
+
+		void addMove(char Input, shared_ptr<MlexDfaSimpleState> State) {
+			pair<char, shared_ptr<MlexDfaSimpleState>> newPair(Input, State);
+			_moveMap.emplace(newPair);
+		}
+
+		shared_ptr<MlexDfaSimpleState> getMove(char Input) {
+			return _moveMap[Input];
+		}
+	};
+
+	//普通的DFA状态
 	class MlexDfaState {
 	private:
 		map<char, shared_ptr<MlexDfaState>> _moveMap;
@@ -12,16 +45,17 @@ namespace mlex {
 		uint32_t _nfaStatesSum;
 		uint32_t _stateId;
 		
-
 	public:
 		bool _final;
-		
+		string _oldre;
+		shared_ptr<list<shared_ptr<MlexDfaState>>> _equalityGroup;
+
 		/**
 		 * 构造一个DFA状态
 		 */
 		MlexDfaState() {
 			_final = false;
-			_stateId = _stateIdCounter++;
+			_stateId = _dfaStateCounter++;
 		}
 
 		/**
@@ -30,7 +64,7 @@ namespace mlex {
 		 */
 		MlexDfaState(vector<shared_ptr<MlexNfaState>>nfaStates) :_nfaStates(move(nfaStates)) {
 			_final = false;
-			_stateId = _stateIdCounter++;
+			_stateId = _dfaStateCounter++;
 			_nfaStatesSum = 0;
 			for (auto iter1 : _nfaStates) {
 				_nfaStatesSum += iter1->getStateId();
@@ -102,12 +136,23 @@ namespace mlex {
 
 	private:
 		MlexNfa _nfa;
-		map<uint32_t,vector<shared_ptr<MlexDfaState>>> _dfaStates;
-		shared_ptr<MlexDfaState> _startState;
+		map<uint32_t,vector<shared_ptr<MlexDfaState>>> _dfaStatesOnIdSummary;
+		map<uint32_t, shared_ptr<MlexDfaState>> _dfaStatesMap;
+		map<uint32_t, shared_ptr<MlexDfaSimpleState>> _dfaSimpleStateMap;
 
 	public:
-		MlexDfa(MlexNfa Nfa) :_nfa(Nfa) {
+		shared_ptr<MlexDfaState> _startState;
+		shared_ptr<MlexDfaSimpleState> _sStartState;
 
+		MlexDfa(MlexNfa Nfa) :_nfa(Nfa) {
+		}
+
+		vector<char>& getInputTable() {
+			return _nfa._char_tab;
+		}
+
+		map<uint32_t, shared_ptr<MlexDfaState>>& getDfaStatesMap() {
+			return _dfaStatesMap;
 		}
 
 		vector<shared_ptr<MlexNfaState>>::iterator findEmplacePosition(vector<shared_ptr<MlexNfaState>>& v,shared_ptr<MlexNfaState>& dfa) {
@@ -241,8 +286,8 @@ namespace mlex {
 					final = false;
 
 					//用于确定新的DFA状态是否已经存在
-					if (_dfaStates.count(newDfaState->getNfaStatesSum()) != 0) {
-						vector<shared_ptr<MlexDfaState>>& v = _dfaStates[newDfaState->getNfaStatesSum()];
+					if (_dfaStatesOnIdSummary.count(newDfaState->getNfaStatesSum()) != 0) {
+						vector<shared_ptr<MlexDfaState>>& v = _dfaStatesOnIdSummary[newDfaState->getNfaStatesSum()];
 						auto find = find_if(begin(v), end(v), [newDfaState](const shared_ptr<MlexDfaState> One) {
 							return (*One) == (*newDfaState);
 						});
@@ -253,6 +298,7 @@ namespace mlex {
 						}
 						else {
 							instack_state->addMove(iter, *find);
+							_dfaStateCounter--;
 						}
 					}
 					else {
@@ -266,24 +312,131 @@ namespace mlex {
 
 				//如果DFA状态集中包含单个DFA的NFA状态集合之和和当前DFA状态的NFA状态集合之和相同的元素
 				//这么设计是借助map内部高效的映射算法，来减少DFA状态比较的时间
-				if( _dfaStates.count(instack_state->getNfaStatesSum())){
-					vector<shared_ptr<MlexDfaState>>& v = _dfaStates[instack_state->getNfaStatesSum()];
+				if(_dfaStatesOnIdSummary.count(instack_state->getNfaStatesSum())){
+					vector<shared_ptr<MlexDfaState>>& v = _dfaStatesOnIdSummary[instack_state->getNfaStatesSum()];
 					v.emplace_back(instack_state);
 				}
 				//如果不包含就新建一个
 				else {
 					vector<shared_ptr<MlexDfaState>> v;
 					v.emplace_back(instack_state);
-					_dfaStates.emplace(pair<uint32_t, vector<shared_ptr<MlexDfaState>>>(instack_state->getNfaStatesSum(), v));
+					_dfaStatesOnIdSummary.emplace(pair<uint32_t, vector<shared_ptr<MlexDfaState>>>(instack_state->getNfaStatesSum(), v));
 				}
+
+				//保存DFA对应的正则表达式
+				for (auto iter : instack_state->getNfaStates()) {
+					if (iter->_final) {
+						instack_state->_oldre = iter->_oldre;
+						break;
+					}
+				}
+				
+				_dfaStatesMap.emplace(pair<uint32_t, shared_ptr<MlexDfaState>>(instack_state->getStateId(), instack_state));
+			}
+
+			//这里NFA中所有节点都会被销毁
+			_dfaStatesOnIdSummary.clear();
+			for (auto iter : _dfaStatesMap) {
+				iter.second->getNfaStates().clear();
 			}
 		}
 
 		/**
 		 * DFA转简化DFA
+		 * @param	deep		深度简化
+		 * 
+		 * 由于需要保留原始正则表达式的信息，所以会将每个终态都设为一组
+		 * 如果deep设为true，这会将所有终态设为一组，但会丢失原始正则表达式的信息
 		 */
-		void simplify() {
+		void simplify(bool deep) {
 
+			stack<shared_ptr<list<shared_ptr<MlexDfaState>>>> _workGroup;
+			vector<shared_ptr<list<shared_ptr<MlexDfaState>>>> _finalGroup;
+
+			//首先分割成两个组，一个是终态，一个是非终态
+			auto _group1 = shared_ptr<list<shared_ptr<MlexDfaState>>>(new list<shared_ptr<MlexDfaState>>);
+			auto _group2 = shared_ptr<list<shared_ptr<MlexDfaState>>>(new list<shared_ptr<MlexDfaState>>);
+			for (auto iter : _dfaStatesMap) {
+				if (!iter.second->_final) {
+					iter.second->_equalityGroup = shared_ptr<list<shared_ptr<MlexDfaState>>>(_group1);
+					_group1->emplace_back(iter.second);
+				}
+				else {
+					if (deep) {
+						iter.second->_equalityGroup = shared_ptr<list<shared_ptr<MlexDfaState>>>(_group2);
+						_group2->emplace_back(iter.second);
+					}
+					else {
+						auto _group = shared_ptr<list<shared_ptr<MlexDfaState>>>(new list<shared_ptr<MlexDfaState>>);
+						iter.second->_equalityGroup = shared_ptr<list<shared_ptr<MlexDfaState>>>(_group);
+						_group->emplace_back(iter.second);
+						_workGroup.emplace(_group);
+					}
+				}
+			}
+			_workGroup.emplace(_group1);
+			if (deep) {
+				_workGroup.emplace(_group2);
+			}
+
+			while (!_workGroup.empty()) {
+				bool not_final = false;
+				auto top = _workGroup.top();
+				_workGroup.pop();
+
+				for (auto iter : _nfa._char_tab) {
+					auto _tag_group = (top->front()->getMove(iter) ? top->front()->getMove(iter)->_equalityGroup.get() : nullptr);
+					auto _group1 = shared_ptr<list<shared_ptr<MlexDfaState>>>(new list<shared_ptr<MlexDfaState>>);
+
+					//将不等价的状态放到另一个新的组里
+					top->remove_if([_tag_group,_group1,iter](shared_ptr<MlexDfaState>& state) {
+						if (!(
+							(_tag_group == nullptr && state->getMove(iter) == nullptr) ||
+							(state->getMove(iter) && (state->getMove(iter)->_equalityGroup.get() == _tag_group))
+							)) {
+							state->_equalityGroup = shared_ptr<list<shared_ptr<MlexDfaState>>>(_group1);
+							_group1->emplace_back(state);
+							return true;
+						}
+						else {
+							return false;
+						}
+					});
+
+					if (_group1->size() != 0) {
+						_workGroup.emplace(_group1);
+					}
+				}
+
+				_finalGroup.emplace_back(top);
+			}
+
+			map<list<shared_ptr<MlexDfaState>>*, shared_ptr<MlexDfaSimpleState>> stateMap;
+
+			for (auto iter : _finalGroup) {
+				shared_ptr<MlexDfaSimpleState> sstate = shared_ptr<MlexDfaSimpleState>(new MlexDfaSimpleState());
+				stateMap.emplace(pair<list<shared_ptr<MlexDfaState>>*, shared_ptr<MlexDfaSimpleState>>(iter.get(), move(sstate)));
+			}
+
+			for (auto iter : _finalGroup) {
+				auto sstate = stateMap[iter.get()];
+				//对于每个输入符号，依次剔除不等价的状态
+				for (auto iter2 : *iter) {
+					for (auto iter3 : _nfa._char_tab) {
+						if (iter2->getMove(iter3)) {
+							auto moveTag = stateMap[iter2->getMove(iter3)->_equalityGroup.get()];
+							sstate->addMove(iter3, moveTag);
+						}
+					}
+					if (iter2->getStateId() == 0) {
+						_sStartState = sstate;
+					}
+					if (iter2->_final) {
+						sstate->_final = true;
+						sstate->_oldre = iter2->_oldre;
+					}
+				}
+			}
 		}
 
 		/**
@@ -303,13 +456,7 @@ namespace mlex {
 			if (!dfa_state->_final)
 				return false;
 
-			//由于之前是排过序的，这里肯定符合优先匹配原则
-			for (auto iter : dfa_state->getNfaStates()) {
-				if (iter->_final) {
-					re = iter->_oldre;
-					break;
-				}
-			}
+			re = dfa_state->_oldre;
 			return true;
 		}
 	};

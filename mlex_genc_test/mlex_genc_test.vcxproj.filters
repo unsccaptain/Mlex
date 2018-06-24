@@ -13,12 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="lex-test">
-      <UniqueIdentifier>{acc3d952-4fed-4ab3-bfa7-3158138ef7dc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="gencode">
-      <UniqueIdentifier>{1c339861-8a8b-4d94-9f94-ed5d9c147388}</UniqueIdentifier>
-    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -27,31 +24,16 @@
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="regexp.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="nfa.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="dfa.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="gencode\mlex-genc.h">
-      <Filter>gencode</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="mlex.cpp">
+    <ClCompile Include="mlex_genc_test.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\ReadMe.md" />
-    <None Include="lex-test\common.lex">
-      <Filter>lex-test</Filter>
-    </None>
+    <ClCompile Include="..\mlex\lex-test\genc.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

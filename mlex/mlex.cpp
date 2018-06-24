@@ -4,6 +4,8 @@
 #include "stdafx.h"
 #include "dfa.h"
 
+#include "gencode\mlex-genc.h"
+
 #include <fstream>
 
 int main()
@@ -13,21 +15,20 @@ int main()
 
 	char* test_strings[] = {
 		"joker",
-		"jokes",
-		"jokex",
-		"jccc",
-		"Aa",
-		"AbAcAd",
 		"Aaaaa",
-		"AbAcAAA",
+		"0x1234",
+		"0X1234",
 		".3",
-		"0.12",
-		"0.123",
-		"a.ddd",
-		"acdqr",
-		"cds4",
-		"cdsdd",
-		"_bcde"
+		"012",
+		"123",
+		"a.ddf",
+		"addf",
+		"a_cce",
+		"_bcde",
+		"+",
+		">=",
+		"<=",
+		"\"ddsf\""
 	};
 
 	if (fs.good()) {
@@ -41,6 +42,14 @@ int main()
 		mlex::MlexDfa dfa(nfa);
 
 		dfa.convert();
+
+		//dfa.simplify(true);
+
+		mlex::MlexCodeGen_C genc(dfa);
+
+		fstream genf("lex-test\\genc.c", ios::out | ios::trunc);
+
+		genf << genc.gencode();
 
 		for (int i = 0;i < sizeof(test_strings) / sizeof(char*);i++) {
 			string re;

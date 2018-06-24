@@ -100,7 +100,6 @@ namespace mlex {
 		//确定当前状态是否是NFA的终态
 		bool _final;
 		//当前状态接受任意输入字符
-		bool _any;
 		string _oldre;
 
 		/**
@@ -127,10 +126,6 @@ namespace mlex {
 			pair<char, shared_ptr<MlexNfaState>> newMove(Input, shared_ptr<MlexNfaState>(State));
 			if (Input != 0) {
 				_singleMap = newMove;
-				//接受任意输入
-				if (Input == -1) {
-					_any = true;
-				}
 			}
 			else {
 				_multiMap.emplace_back(newMove.second);
