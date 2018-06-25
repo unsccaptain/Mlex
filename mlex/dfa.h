@@ -62,7 +62,7 @@ namespace mlex {
 		 * 构造一个DFA状态
 		 * @param	nfaStates		原始NFA的状态集
 		 */
-		MlexDfaState(vector<shared_ptr<MlexNfaState>>nfaStates) :_nfaStates(move(nfaStates)) {
+		MlexDfaState(vector<shared_ptr<MlexNfaState>>&nfaStates) :_nfaStates(nfaStates) {
 			_final = false;
 			_stateId = _dfaStateCounter++;
 			_nfaStatesSum = 0;
@@ -110,7 +110,7 @@ namespace mlex {
 			}
 			//如果可以接受任意字符的话
 			else {
-				return _moveMap[-1];
+				return _moveMap[1];
 			}
 		}
 
@@ -202,6 +202,8 @@ namespace mlex {
 			vector<shared_ptr<MlexNfaState>> newVector;
 			newVector.reserve(OldVector.size() * 4);
 
+			Final = false;
+
 			for (auto iter :OldVector) {
 				//对每个元素，求出move(Input)的集合
 				auto moveState = iter->getMove(Input);
@@ -281,13 +283,10 @@ namespace mlex {
 						continue;
 					}
 
-					//利用集合构造新的dfa节点
 					newDfaState = shared_ptr<MlexDfaState>(new MlexDfaState(st_state));
-					//如果在nfa状态集中包含终态，则该dfa为终态
 					if (final) {
 						newDfaState->_final = true;
 					}
-					final = false;
 
 					//用于确定新的DFA状态是否已经存在
 					if (_dfaStatesOnIdSummary.count(newDfaState->getNfaStatesSum()) != 0) {
@@ -303,28 +302,26 @@ namespace mlex {
 						else {
 							instack_state->addMove(iter, *find);
 							_dfaStateCounter--;
+							continue;
 						}
 					}
 					else {
 						instack_state->addMove(iter, newDfaState);
 						new_states.emplace(newDfaState);
 					}
-
-					//否则销毁这个dfa节点
 					
-				}
-
-				//如果DFA状态集中包含单个DFA的NFA状态集合之和和当前DFA状态的NFA状态集合之和相同的元素
-				//这么设计是借助map内部高效的映射算法，来减少DFA状态比较的时间
-				if(_dfaStatesOnIdSummary.count(instack_state->getNfaStatesSum())){
-					vector<shared_ptr<MlexDfaState>>& v = _dfaStatesOnIdSummary[instack_state->getNfaStatesSum()];
-					v.emplace_back(instack_state);
-				}
-				//如果不包含就新建一个
-				else {
-					vector<shared_ptr<MlexDfaState>> v;
-					v.emplace_back(instack_state);
-					_dfaStatesOnIdSummary.emplace(pair<uint32_t, vector<shared_ptr<MlexDfaState>>>(instack_state->getNfaStatesSum(), v));
+					//如果DFA状态集中包含单个DFA的NFA状态集合之和和当前DFA状态的NFA状态集合之和相同的元素
+					//这么设计是借助map内部高效的映射算法，来减少DFA状态比较的时间
+					if (_dfaStatesOnIdSummary.count(newDfaState->getNfaStatesSum())) {
+						vector<shared_ptr<MlexDfaState>>& v = _dfaStatesOnIdSummary[newDfaState->getNfaStatesSum()];
+						v.emplace_back(newDfaState);
+					}
+					//如果不包含就新建一个
+					else {
+						vector<shared_ptr<MlexDfaState>> v;
+						v.emplace_back(newDfaState);
+						_dfaStatesOnIdSummary.emplace(pair<uint32_t, vector<shared_ptr<MlexDfaState>>>(newDfaState->getNfaStatesSum(), v));
+					}
 				}
 
 				//保存DFA对应的正则表达式
@@ -410,8 +407,8 @@ namespace mlex {
 				_finalGroup.emplace_back(top);
 			}
 
+			//首先对每个组
 			map<list<shared_ptr<MlexDfaState>>*, shared_ptr<MlexDfaSimpleState>> stateMap;
-
 			for (auto iter : _finalGroup) {
 				shared_ptr<MlexDfaSimpleState> sstate = shared_ptr<MlexDfaSimpleState>(new MlexDfaSimpleState());
 				stateMap.emplace(pair<list<shared_ptr<MlexDfaState>>*, shared_ptr<MlexDfaSimpleState>>(iter.get(), move(sstate)));
@@ -435,6 +432,7 @@ namespace mlex {
 						sstate->_oldre = iter2->_oldre;
 					}
 				}
+				_dfaSimpleStateMap.emplace(pair<uint32_t, shared_ptr<MlexDfaSimpleState>>(sstate->getStateId(), sstate));
 			}
 		}
 

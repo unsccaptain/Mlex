@@ -19,12 +19,13 @@ namespace mlex {
 		string genStateMetrix() {
 			string s;
 
-			map<uint32_t, shared_ptr<MlexDfaState>> stateMap = _dfa.getDfaStatesMap();
+			map<uint32_t, shared_ptr<MlexDfaSimpleState>> stateMap = _dfa.getDfaSimpleStateMap();
 			vector<char> inputTable = _dfa.getInputTable();
 
 			s += "\n";
 			s += "#define state_count " + to_string(stateMap.size()) + "\n";
 			s += "#define input_count " + to_string(inputTable.size()) + "\n";
+			s += "#define start_index " + to_string(_dfa._sStartState->getStateId()) + "\n";
 
 			s += "int mlex_input_map[128] = {" + string("\n");
 			int counter = 0;
@@ -72,8 +73,11 @@ namespace mlex {
 			s += "bool mlex_read(char* s){" + string("\n");
 			s += "\tint s_idx = 0;" + string("\n");
 			s += "\tint c_idx = mlex_input_map[s[s_idx]];" + string("\n");
-			s += "\tint next = 0, *next_vt = 0;" + string("\n");
-			s += "\twhile (c_idx != -1 && next != -1) {" + string("\n");
+			s += "\tint next = start_index, *next_vt = 0;" + string("\n");
+			s += "\twhile ((c_idx != -1 || mlex_input_map[1] != -1) && next != -1) {" + string("\n");
+			s += "\t\tif (c_idx == -1) {" + string("\n");
+			s += "\t\t\tc_idx = 0;" + string("\n");
+			s += "\t\t}" + string("\n");
 			s += "\t\tnext = mlex_state_metrix[next][c_idx];" + string("\n");
 			s += "\t\tif (next == -1) {" + string("\n");
 			s += "\t\t\tbreak;" + string("\n");

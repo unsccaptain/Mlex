@@ -160,7 +160,7 @@ namespace mlex {
 			else {
 				vector<shared_ptr<MlexNfaState>> moveVector;
 				if (_singleMap.second) {
-					if ((_singleMap.first == Input) || (_singleMap.first == -1)) {
+					if ((_singleMap.first == Input) || (_singleMap.first == 1)) {
 						moveVector.emplace_back(shared_ptr<MlexNfaState>(_singleMap.second));
 					}
 				}
@@ -600,8 +600,8 @@ namespace mlex {
 					//NFA中-1标识任意合法字符，即(32,127)
 					//DNF中表示除了字母表中的其他任意合法字符
 					//否则DFA会出现多重映射
-					_char_tab.emplace_back(-1);
-					workStack.emplace_back(createBasicStateDiagram(-1));
+					_char_tab.emplace_back(1);
+					workStack.emplace_back(createBasicStateDiagram(1));
 					break;
 				}
 				default:
