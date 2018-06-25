@@ -43,7 +43,7 @@ int main()
 
 		dfa.convert();
 
-		//dfa.simplify(true);
+		dfa.simplify(false);
 
 		mlex::MlexCodeGen_C genc(dfa);
 

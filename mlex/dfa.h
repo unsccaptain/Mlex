@@ -155,6 +155,10 @@ namespace mlex {
 			return _dfaStatesMap;
 		}
 
+		map<uint32_t, shared_ptr<MlexDfaSimpleState>>& getDfaSimpleStateMap() {
+			return _dfaSimpleStateMap;
+		}
+
 		vector<shared_ptr<MlexNfaState>>::iterator findEmplacePosition(vector<shared_ptr<MlexNfaState>>& v,shared_ptr<MlexNfaState>& dfa) {
 
 			if (v.size() == 0) {
@@ -345,8 +349,10 @@ namespace mlex {
 		 * DFA转简化DFA
 		 * @param	deep		深度简化
 		 * 
-		 * 由于需要保留原始正则表达式的信息，所以会将每个终态都设为一组
-		 * 如果deep设为true，这会将所有终态设为一组，但会丢失原始正则表达式的信息
+		 * 由于需要保留原始正则表达式的信息，所以在简化终态组时，不仅需要符合蔓延性条件
+		 * 还需要将状态对应的正则表达式不同的状态进行分割
+		 * 如果deep位true，则状态最少，则只能进行字符串匹配
+		 * 如果deep为false，则状态会多一些，但可以用于代码生成
 		 */
 		void simplify(bool deep) {
 
@@ -362,22 +368,12 @@ namespace mlex {
 					_group1->emplace_back(iter.second);
 				}
 				else {
-					if (deep) {
-						iter.second->_equalityGroup = shared_ptr<list<shared_ptr<MlexDfaState>>>(_group2);
-						_group2->emplace_back(iter.second);
-					}
-					else {
-						auto _group = shared_ptr<list<shared_ptr<MlexDfaState>>>(new list<shared_ptr<MlexDfaState>>);
-						iter.second->_equalityGroup = shared_ptr<list<shared_ptr<MlexDfaState>>>(_group);
-						_group->emplace_back(iter.second);
-						_workGroup.emplace(_group);
-					}
+					iter.second->_equalityGroup = shared_ptr<list<shared_ptr<MlexDfaState>>>(_group2);
+					_group2->emplace_back(iter.second);
 				}
 			}
 			_workGroup.emplace(_group1);
-			if (deep) {
-				_workGroup.emplace(_group2);
-			}
+			_workGroup.emplace(_group2);
 
 			while (!_workGroup.empty()) {
 				bool not_final = false;
@@ -386,14 +382,17 @@ namespace mlex {
 
 				for (auto iter : _nfa._char_tab) {
 					auto _tag_group = (top->front()->getMove(iter) ? top->front()->getMove(iter)->_equalityGroup.get() : nullptr);
+					auto _tag_re = top->front()->_oldre;
 					auto _group1 = shared_ptr<list<shared_ptr<MlexDfaState>>>(new list<shared_ptr<MlexDfaState>>);
 
 					//将不等价的状态放到另一个新的组里
-					top->remove_if([_tag_group,_group1,iter](shared_ptr<MlexDfaState>& state) {
+					top->remove_if([_tag_group,_tag_re,_group1,iter,deep](shared_ptr<MlexDfaState>& state) {
 						if (!(
 							(_tag_group == nullptr && state->getMove(iter) == nullptr) ||
-							(state->getMove(iter) && (state->getMove(iter)->_equalityGroup.get() == _tag_group))
-							)) {
+								(state->getMove(iter) && (state->getMove(iter)->_equalityGroup.get() == _tag_group))
+								)
+							|| (!deep && state->_final && (state->_oldre.compare(_tag_re) != 0))
+							) {
 							state->_equalityGroup = shared_ptr<list<shared_ptr<MlexDfaState>>>(_group1);
 							_group1->emplace_back(state);
 							return true;
@@ -444,7 +443,7 @@ namespace mlex {
 		 */
 		bool validateString(string& s,string& re) {
 			size_t i = 0;
-			shared_ptr<MlexDfaState> dfa_state = _startState->getMove(s[i]);
+			shared_ptr<MlexDfaSimpleState> dfa_state = _sStartState->getMove(s[i]);
 			if (!dfa_state)
 				return false;
 			while (i != s.length() - 1) {
