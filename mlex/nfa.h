@@ -100,7 +100,7 @@ namespace mlex {
 		//确定当前状态是否是NFA的终态
 		bool _final;
 		//当前状态接受任意输入字符
-		string _oldre;
+		MlexRegexpContext _oldre;
 
 		/**
 		 * 初始化一个NFA状态
@@ -675,8 +675,8 @@ namespace mlex {
 
 			for (size_t i = 0;i < _regExps.getReCount();i++) {
 
-				string& re = _regExps.getRegExp(i);
-				auto diag = convertReToNfa(re);
+				MlexRegexpContext& re = _regExps.getRegExp(i);
+				auto diag = convertReToNfa(re._regExp);
 				diag->getEndState()->_oldre = re;
 				diag->getEndState()->_final = true;
 				reSds.emplace_back(diag);

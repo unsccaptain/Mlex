@@ -65,10 +65,22 @@ namespace mlex {
 		}
 	}
 
+	class MlexRegexpContext {
+	public:
+		string _regExp;
+		string _genCode;
+
+		MlexRegexpContext() {
+		}
+
+		MlexRegexpContext(string RegExp, string Code) :_regExp(RegExp), _genCode(Code) {
+		}
+	};
+
 	class MlexRegexp {
 
 	private:
-		vector<string> _regExps;
+		vector<MlexRegexpContext> _regExps;
 		//fstream _inputStream;
 		char* _inputString;
 
@@ -84,9 +96,24 @@ namespace mlex {
 			istream is(&sbuf);
 
 			while (!is.eof()) {
+				
 				getline(is, sline);
-				if (validateRegExp(sline))
-					_regExps.push_back(sline);
+				if (sline == "")
+					continue;
+
+				size_t wspos = min(sline.find_first_of(' '), sline.find_first_of('\t'));
+				string part2, part1 = sline.substr(0, wspos);
+				if (wspos != size_t(-1)) {
+					part2 = sline.substr(wspos, sline.size() - wspos);
+					part2 = part2.substr(max(part2.find_first_not_of(' '), part2.find_first_not_of('\t')));
+				}
+				else {
+					part2 = "";
+				}
+
+				if (validateRegExp(part1)) {
+					_regExps.push_back(MlexRegexpContext(part1, part2));
+				}
 			}
 		}
 
@@ -99,9 +126,23 @@ namespace mlex {
 			string sline;
 
 			while (!FileStream.eof()) {
+
 				getline(FileStream, sline);
-				if (validateRegExp(sline)) {
-					_regExps.push_back(sline);
+				if (sline == "")
+					continue;
+
+				size_t wspos = min(sline.find_first_of(' '), sline.find_first_of('\t'));
+				string part2,part1 = sline.substr(0, wspos);
+				if (wspos != size_t(-1)) {
+					part2 = sline.substr(wspos, sline.size() - wspos);
+					part2 = part2.substr(max(part2.find_first_not_of(' '), part2.find_first_not_of('\t')));
+				}
+				else {
+					part2 = "";
+				}
+				
+				if (validateRegExp(part1)) {
+					_regExps.push_back(MlexRegexpContext(part1, part2));
 				}
 			}
 		}
@@ -119,20 +160,20 @@ namespace mlex {
 			for (size_t i = 0;i < re.length();i++) {
 
 				//特殊字符检测
-				switch (re[i])
-				{
-				case '(':
-					sbk++;
-					continue;
-				case '[':
-					mbk++;
-					continue;
-				case ')':
-					sbk--;
-					continue;
-				case ']':
-					mbk--;
-				}
+				//switch (re[i])
+				//{
+				//case '(':
+				//	sbk++;
+				//	continue;
+				//case '[':
+				//	mbk++;
+				//	continue;
+				//case ')':
+				//	sbk--;
+				//	continue;
+				//case ']':
+				//	mbk--;
+				//}
 
 				if (!isValidChar(re[i])) {
 					throw(string(re + ":包含非法字符。"));
@@ -159,7 +200,22 @@ namespace mlex {
 		bool appendRegExp(string re) {
 
 			if (validateRegExp(re)) {
-				_regExps.push_back(re);
+				_regExps.push_back(MlexRegexpContext(re, ""));
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+
+		/**
+		 * 追加一条正则表达式
+		 * @param	re			表达式对象
+		 */
+		bool appendRegExp(string re, string code) {
+
+			if (validateRegExp(re)) {
+				_regExps.push_back(MlexRegexpContext(re, code));
 				return true;
 			}
 			else {
@@ -171,7 +227,7 @@ namespace mlex {
 		 * 获取第i条正则表达式
 		 * @param	i			表达式索引
 		 */
-		string& getRegExp(uint16_t i) {
+		MlexRegexpContext& getRegExp(uint16_t i) {
 			
 			if (i >= _regExps.size()) {
 				throw("获取表达式过界。");

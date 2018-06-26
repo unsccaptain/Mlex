@@ -16,7 +16,7 @@ namespace mlex {
 
 	public:
 		bool _final;
-		string _oldre;
+		MlexRegexpContext _oldre;
 
 		MlexDfaSimpleState() {
 			_final = false;
@@ -47,7 +47,7 @@ namespace mlex {
 		
 	public:
 		bool _final;
-		string _oldre;
+		MlexRegexpContext _oldre;
 		shared_ptr<list<shared_ptr<MlexDfaState>>> _equalityGroup;
 
 		/**
@@ -388,7 +388,7 @@ namespace mlex {
 							(_tag_group == nullptr && state->getMove(iter) == nullptr) ||
 								(state->getMove(iter) && (state->getMove(iter)->_equalityGroup.get() == _tag_group))
 								)
-							|| (!deep && state->_final && (state->_oldre.compare(_tag_re) != 0))
+							|| (!deep && state->_final && (state->_oldre._regExp.compare(_tag_re._regExp) != 0))
 							) {
 							state->_equalityGroup = shared_ptr<list<shared_ptr<MlexDfaState>>>(_group1);
 							_group1->emplace_back(state);
@@ -439,7 +439,7 @@ namespace mlex {
 		/**
 		 * 检验一个字符串是否匹配并返回原始正则表达式
 		 */
-		bool validateString(string& s,string& re) {
+		bool validateString(string& s,MlexRegexpContext& re) {
 			size_t i = 0;
 			shared_ptr<MlexDfaSimpleState> dfa_state = _sStartState->getMove(s[i]);
 			if (!dfa_state)

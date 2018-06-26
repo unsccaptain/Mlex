@@ -70,14 +70,15 @@ namespace mlex {
 			string s;
 
 			s += "\n";
-			s += "bool mlex_read(char* s){" + string("\n");
+			s += "int mlex_read(char* s){" + string("\n");
 			s += "\tint s_idx = 0;" + string("\n");
 			s += "\tint c_idx = mlex_input_map[s[s_idx]];" + string("\n");
-			s += "\tint next = start_index, *next_vt = 0;" + string("\n");
-			s += "\twhile ((c_idx != -1 || mlex_input_map[1] != -1) && next != -1) {" + string("\n");
+			s += "\tint end_state, next = start_index, *next_vt = 0;" + string("\n");
+			s += "\twhile ((c_idx != -1 || mlex_input_map[1] != -1)) {" + string("\n");
 			s += "\t\tif (c_idx == -1) {" + string("\n");
 			s += "\t\t\tc_idx = 0;" + string("\n");
 			s += "\t\t}" + string("\n");
+			s += "\t\tend_state = next;" + string("\n");
 			s += "\t\tnext = mlex_state_metrix[next][c_idx];" + string("\n");
 			s += "\t\tif (next == -1) {" + string("\n");
 			s += "\t\t\tbreak;" + string("\n");
@@ -92,6 +93,19 @@ namespace mlex {
 			s += "\t\treturn 1;" + string("\n");
 			s += "\telse" + string("\n");
 			s += "\t\treturn 0;" + string("\n");
+			s += "\tswitch(end_state){" + string("\n");
+			
+			for (auto iter : _dfa.getDfaSimpleStateMap()) {
+				if (!iter.second->_final) {
+					continue;
+				}
+				s += "\tcase " + to_string(iter.first) + string(":\n");
+				s += "\t\t" + iter.second->_oldre._genCode + string("\n");
+				s += "\t\tbreak;\n";
+			}
+
+			s += "\t}\n";
+
 			s += "}\n";
 
 			return s;

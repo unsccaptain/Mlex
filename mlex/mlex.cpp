@@ -52,10 +52,10 @@ int main()
 		genf << genc.gencode();
 
 		for (int i = 0;i < sizeof(test_strings) / sizeof(char*);i++) {
-			string re;
+			mlex::MlexRegexpContext re;
 			bool r = dfa.validateString(string(test_strings[i]), re);
 			if (r) {
-				printf("%s:匹配正确,表达式%s\n", test_strings[i], re.c_str());
+				printf("%s:匹配正确,表达式%s\n", test_strings[i], re._regExp.c_str());
 			}
 			else {
 				printf("%s:匹配错误\n", test_strings[i]);

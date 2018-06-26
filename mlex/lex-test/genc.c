@@ -7,7 +7,7 @@
 #define input_count 73
 #define start_index 37
 int mlex_input_map[128] = {
--1,0,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,2,-1,-1,-1,-1,3,4,-1,5,-1,6,7,8,9,10,11,12,13,14,15,16,-1,-1,17,18,19,-1,-1,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,-1,-1,-1,-1,46,-1,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,-1,-1,-1,-1,-1
+-1,0,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,2,-1,-1,-1,-1,3,4,-1,5,-1,6,7,8,9,10,11,12,13,14,15,16,-1,-1,17,18,19,-1,-1,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,-1,-1,-1,-1,46,-1,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,-1,-1,-1,-1,73
 };
 
 int mlex_state_metrix[state_count][input_count + 1] = {
@@ -55,14 +55,15 @@ int mlex_state_metrix[state_count][input_count + 1] = {
 {41,36,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,41,0}
 };
 
-bool mlex_read(char* s){
+int mlex_read(char* s){
 	int s_idx = 0;
 	int c_idx = mlex_input_map[s[s_idx]];
-	int next = start_index, *next_vt = 0;
-	while ((c_idx != -1 || mlex_input_map[1] != -1) && next != -1) {
+	int end_state, next = start_index, *next_vt = 0;
+	while ((c_idx != -1 || mlex_input_map[1] != -1)) {
 		if (c_idx == -1) {
 			c_idx = 0;
 		}
+		end_state = next;
 		next = mlex_state_metrix[next][c_idx];
 		if (next == -1) {
 			break;
@@ -77,4 +78,117 @@ bool mlex_read(char* s){
 		return 1;
 	else
 		return 0;
+	switch(end_state){
+	case 0:
+		{return 5;}
+		break;
+	case 1:
+		{return 3;}
+		break;
+	case 2:
+		{return 1;}
+		break;
+	case 3:
+		{return 2;}
+		break;
+	case 4:
+		{return 4;}
+		break;
+	case 5:
+		{return 24;}
+		break;
+	case 6:
+		{return 7;}
+		break;
+	case 7:
+		{return 6;}
+		break;
+	case 8:
+		{return 22;}
+		break;
+	case 9:
+		{return 22;}
+		break;
+	case 10:
+		{return 22;}
+		break;
+	case 11:
+		{return 22;}
+		break;
+	case 12:
+		{return 22;}
+		break;
+	case 13:
+		{return 22;}
+		break;
+	case 14:
+		{return 22;}
+		break;
+	case 15:
+		{return 22;}
+		break;
+	case 16:
+		{return 22;}
+		break;
+	case 17:
+		{return 22;}
+		break;
+	case 18:
+		{return 22;}
+		break;
+	case 19:
+		{return 22;}
+		break;
+	case 20:
+		{return 22;}
+		break;
+	case 21:
+		{return 22;}
+		break;
+	case 22:
+		{return 17;}
+		break;
+	case 23:
+		{return 19;}
+		break;
+	case 24:
+		{return 18;}
+		break;
+	case 25:
+		{return 21;}
+		break;
+	case 26:
+		{return 14;}
+		break;
+	case 27:
+		{return 20;}
+		break;
+	case 28:
+		{return 15;}
+		break;
+	case 29:
+		{return 16;}
+		break;
+	case 30:
+		{return 8;}
+		break;
+	case 31:
+		{return 11;}
+		break;
+	case 32:
+		{return 10;}
+		break;
+	case 33:
+		{return 12;}
+		break;
+	case 34:
+		{return 9;}
+		break;
+	case 35:
+		{return 23;}
+		break;
+	case 36:
+		{return 13;}
+		break;
+	}
 }
