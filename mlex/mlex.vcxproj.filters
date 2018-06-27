@@ -19,6 +19,9 @@
     <Filter Include="gencode">
       <UniqueIdentifier>{1c339861-8a8b-4d94-9f94-ed5d9c147388}</UniqueIdentifier>
     </Filter>
+    <Filter Include="docopt">
+      <UniqueIdentifier>{b97c09b4-a046-43a2-93c1-c4e5230e5e4d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -45,6 +48,18 @@
     <ClInclude Include="gencode\mlex-gencpp.h">
       <Filter>gencode</Filter>
     </ClInclude>
+    <ClInclude Include="docopt\docopt.h">
+      <Filter>docopt</Filter>
+    </ClInclude>
+    <ClInclude Include="docopt\docopt_private.h">
+      <Filter>docopt</Filter>
+    </ClInclude>
+    <ClInclude Include="docopt\docopt_util.h">
+      <Filter>docopt</Filter>
+    </ClInclude>
+    <ClInclude Include="docopt\docopt_value.h">
+      <Filter>docopt</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -52,6 +67,9 @@
     </ClCompile>
     <ClCompile Include="mlex.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="docopt\docopt.cpp">
+      <Filter>docopt</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -22,7 +22,6 @@ namespace mlex {
 			map<uint32_t, shared_ptr<MlexDfaSimpleState>> stateMap = _dfa.getDfaSimpleStateMap();
 			vector<char> inputTable = _dfa.getInputTable();
 
-			s += "\n";
 			s += "#define state_count " + to_string(stateMap.size()) + "\n";
 			s += "#define input_count " + to_string(inputTable.size()) + "\n";
 			s += "#define start_index " + to_string(_dfa._sStartState->getStateId()) + "\n\n";
@@ -69,31 +68,48 @@ namespace mlex {
 		string genMainFunc() {
 			string s;
 
-			s += "\n";
-			s += "int mlex_read(char* s){" + string("\n");
-			s += "\tmlex_char = s;\n";
-			s += "\tint s_idx = 0;" + string("\n");
-			s += "\tint c_idx = mlex_input_map[s[s_idx]];" + string("\n");
-			s += "\tint end_state, next = start_index, *next_vt = 0;" + string("\n");
-			s += "\twhile ((c_idx != -1 || mlex_input_map[1] != -1)) {" + string("\n");
-			s += "\t\tif (c_idx == -1) {" + string("\n");
-			s += "\t\t\tc_idx = 0;" + string("\n");
-			s += "\t\t}" + string("\n");
-			s += "\t\tend_state = next;" + string("\n");
-			s += "\t\tnext = mlex_state_metrix[next][c_idx];" + string("\n");
-			s += "\t\tif (next == -1) {" + string("\n");
-			s += "\t\t\tbreak;" + string("\n");
-			s += "\t\t}" + string("\n");
-			s += "\t\tnext_vt = mlex_state_metrix[next];" + string("\n");
-			s += "\t\tc_idx = mlex_input_map[s[++s_idx]];" + string("\n");
-			s += "\t\tif (s[s_idx] == 0){" + string("\n");
-			s += "\t\t\tbreak;" + string("\n");
-			s += "\t\t}" + string("\n");
-			s += "\t}\n";
-			s += "\tif (!(next_vt != 0 && next_vt[input_count] == 1))" + string("\n");
-			s += "\t\treturn 0;" + string("\n");
-			s += "\tmlex_next = s + s_idx;" + string("\n");
-			s += "\tswitch(end_state){" + string("\n");
+			s = R"(
+			
+int mlex_read(char* s){
+
+	mlex_char = s;
+	int s_idx = 0;
+	int c_idx = mlex_input_map[s[s_idx]];
+	int end_state, next = start_index, *next_vt = 0;
+
+	while ((c_idx != -1 || mlex_input_map[1] != -1)) {
+
+		//如果是-1，说明存在任意字符的规则
+		if (c_idx == -1) {
+			c_idx = 0;
+		}
+
+		//保存最后一个状态
+		end_state = next;
+
+		//获取下一个状态
+		next = mlex_state_metrix[next][c_idx];
+		if (next == -1) {
+			break;
+		}
+
+		//保存下一个状态的状态数组
+		next_vt = mlex_state_metrix[next];
+
+		c_idx = mlex_input_map[s[++s_idx]];
+		if (s[s_idx] == 0){
+			break;
+		}
+	}
+
+	if (!(next_vt != 0 && next_vt[input_count] == 1)){
+		return 0;
+	}
+
+	mlex_next = s + s_idx;
+
+	switch(end_state){
+)";
 			
 			for (auto iter : _dfa.getDfaSimpleStateMap()) {
 				if (!iter.second->_final) {

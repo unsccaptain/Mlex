@@ -725,11 +725,10 @@ namespace mlex {
 			catch (MlexException e) {
 
 				if (e._level == MlexExceptionLevel::Error) {
-					MlexExceptionStack.emplace_back(e);
+					MlexExceptionStack.emplace(e);
 					throw(MlexException(MlexExceptionLevel::Error, MlexExceptionType::InvalidExpression, re._regExp + "表达式解析错误。"));
 				}
 			}
-
 
 			//去除字母表中重复元素
 			sort(_char_tab.begin(), _char_tab.end());

@@ -5,6 +5,7 @@
 #include <string>
 #include <string.h>
 #include <vector>
+#include <stack>
 
 using namespace std;
 
@@ -24,10 +25,6 @@ namespace mlex {
 	};
 
 	using ExceptionUtype = underlying_type<MlexExceptionType>::type;
-
-	class MlexException;
-
-	vector<MlexException> MlexExceptionStack;
 
 	class MlexException {
 	public:
@@ -84,5 +81,7 @@ namespace mlex {
 			return ret;
 		}
 	};
+
+	stack<MlexException> MlexExceptionStack;
 
 }
