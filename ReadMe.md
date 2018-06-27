@@ -20,8 +20,19 @@
 - C
 
 ##### 使用方法
-在mlex.cpp里。
+    mlex
 
+    Usage:
+      mlex --lex LEX_FILE --genlang LANG [--genre|--genlex] --output OUTPUT
+	  
+    Options:
+		-h --help				    显示帮助。
+		--lex LEX_FILE			LEX规则文件。
+		--genlang LANG			指定生成语言。[default:C]
+		--genre					    生成正则匹配代码。
+		--genlex				    生成词法分析代码。
+		--output OUTPUT			输出文件。
+    
 ##### 示例
 - \\\+
 - \\\-
