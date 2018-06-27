@@ -25,8 +25,8 @@ namespace mlex {
 			s += "\n";
 			s += "#define state_count " + to_string(stateMap.size()) + "\n";
 			s += "#define input_count " + to_string(inputTable.size()) + "\n";
-			s += "#define start_index " + to_string(_dfa._sStartState->getStateId()) + "\n";
-
+			s += "#define start_index " + to_string(_dfa._sStartState->getStateId()) + "\n\n";
+			s += "char* mlex_char,mlex_next;" + string("\n\n");
 			s += "int mlex_input_map[128] = {" + string("\n");
 			int counter = 0;
 			for (int i = 0;i<128;i++) {
@@ -71,6 +71,7 @@ namespace mlex {
 
 			s += "\n";
 			s += "int mlex_read(char* s){" + string("\n");
+			s += "\tmlex_char = s;\n";
 			s += "\tint s_idx = 0;" + string("\n");
 			s += "\tint c_idx = mlex_input_map[s[s_idx]];" + string("\n");
 			s += "\tint end_state, next = start_index, *next_vt = 0;" + string("\n");
@@ -85,14 +86,13 @@ namespace mlex {
 			s += "\t\t}" + string("\n");
 			s += "\t\tnext_vt = mlex_state_metrix[next];" + string("\n");
 			s += "\t\tc_idx = mlex_input_map[s[++s_idx]];" + string("\n");
+			s += "\t\tif (s[s_idx] == 0){" + string("\n");
+			s += "\t\t\tbreak;" + string("\n");
+			s += "\t\t}" + string("\n");
 			s += "\t}\n";
-			s += "\tif (s[s_idx] != 0){" + string("\n");
+			s += "\tif (!(next_vt != 0 && next_vt[input_count] == 1))" + string("\n");
 			s += "\t\treturn 0;" + string("\n");
-			s += "\t}\n";
-			s += "\tif (next_vt != 0 && next_vt[input_count] == 1)" + string("\n");
-			s += "\t\treturn 1;" + string("\n");
-			s += "\telse" + string("\n");
-			s += "\t\treturn 0;" + string("\n");
+			s += "\tmlex_next = s + s_idx;" + string("\n");
 			s += "\tswitch(end_state){" + string("\n");
 			
 			for (auto iter : _dfa.getDfaSimpleStateMap()) {
@@ -118,7 +118,7 @@ namespace mlex {
 
 		string gencode() {
 
-			return genHeader() + genStateMetrix() + genMainFunc();
+			return genHeader() + _dfa._nfa._regExps._define_part + genStateMetrix() + genMainFunc();
 		}
 
 	};

@@ -39,6 +39,12 @@
     <ClInclude Include="gencode\mlex-genc.h">
       <Filter>gencode</Filter>
     </ClInclude>
+    <ClInclude Include="exception.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="gencode\mlex-gencpp.h">
+      <Filter>gencode</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

@@ -9,6 +9,8 @@
 #include <sstream>
 #include <stack>
 
+#include "exception.h"
+
 using namespace std;
 
 namespace mlex {
@@ -85,6 +87,9 @@ namespace mlex {
 		char* _inputString;
 
 	public:
+		string _define_part;
+		string _code_part;
+
 		/** 
 		 * 从字符串中初始化正则表达式
 		 * @param	Input			包含正则表达式的字符串
@@ -96,10 +101,26 @@ namespace mlex {
 			istream is(&sbuf);
 
 			while (!is.eof()) {
+
+				getline(is, sline);
+				if (sline.compare("%%") == 0) {
+					break;
+				}
+				else {
+					_define_part += sline + "\n";
+				}
+			}
+
+			while (!is.eof()) {
 				
 				getline(is, sline);
-				if (sline == "")
+				if (sline.compare("%%") == 0) {
+					break;
+				}
+
+				if (sline == "") {
 					continue;
+				}
 
 				size_t wspos = min(sline.find_first_of(' '), sline.find_first_of('\t'));
 				string part2, part1 = sline.substr(0, wspos);
@@ -125,11 +146,32 @@ namespace mlex {
 
 			string sline;
 
+			if (!FileStream.good()) {
+				throw(MlexException(MlexExceptionLevel::Error, MlexExceptionType::InvalidInput, "输入文件无效。"));
+				exit(0);
+			}
+
 			while (!FileStream.eof()) {
 
 				getline(FileStream, sline);
-				if (sline == "")
+				if (sline.compare("%%") == 0) {
+					break;
+				}
+				else {
+					_define_part += sline + "\n";
+				}
+			}
+
+			while (!FileStream.eof()) {
+
+				getline(FileStream, sline);
+				if (sline.compare("%%") == 0) {
+					break;
+				}
+
+				if (sline == "") {
 					continue;
+				}
 
 				size_t wspos = min(sline.find_first_of(' '), sline.find_first_of('\t'));
 				string part2,part1 = sline.substr(0, wspos);
@@ -176,19 +218,20 @@ namespace mlex {
 				//}
 
 				if (!isValidChar(re[i])) {
-					throw(string(re + ":包含非法字符。"));
+					throw(MlexException(MlexExceptionLevel::Error,MlexExceptionType::UnrecognizedChar));
+					return false;
 				}
 			}
 
-			if (sbk != 0) {
-				throw(string(re + ":未闭合小括号。"));
-				return false;
-			}
+			//if (sbk != 0) {
+			//	throw(string(re + ":未闭合小括号。"));
+			//	return false;
+			//}
 
-			if (mbk != 0) {
-				throw(string(re + ":未闭合中括号。"));
-				return false;
-			}
+			//if (mbk != 0) {
+			//	throw(string(re + ":未闭合中括号。"));
+			//	return false;
+			//}
 
 			return true;
 		}
@@ -230,7 +273,8 @@ namespace mlex {
 		MlexRegexpContext& getRegExp(uint16_t i) {
 			
 			if (i >= _regExps.size()) {
-				throw("获取表达式过界。");
+				throw(MlexException(MlexExceptionLevel::Warning, MlexExceptionType::NoMoreItems, "获取正则表达式越界。"));
+				return MlexRegexpContext();
 			}
 
 			return _regExps[i];

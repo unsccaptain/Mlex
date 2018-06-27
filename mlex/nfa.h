@@ -81,7 +81,7 @@ namespace mlex {
 			:min(Min), max(Max) {
 		}
 	};
-
+	
 	//定义一个NFA状态
 	class MlexNfaState{
 	
@@ -202,12 +202,14 @@ namespace mlex {
 		}
 	};
 
+	using MlexNfaStatePtrS = shared_ptr<MlexNfaState>;
+
 	//定义一个NFA状态转换图
 	class MlexNfaStateDiagram :public MlexNfaWorkElement {
 
 	private:
-		shared_ptr<MlexNfaState> _startState;
-		shared_ptr<MlexNfaState> _endState;
+		MlexNfaStatePtrS _startState;
+		MlexNfaStatePtrS _endState;
 
 	public:
 		friend class MlexDfa;
@@ -217,21 +219,25 @@ namespace mlex {
 		 * @param	StartState		初态
 		 * @param	EndState		终态
 		 */
-		MlexNfaStateDiagram(shared_ptr<MlexNfaState> StartState, shared_ptr<MlexNfaState> EndState) 
-			:_startState(shared_ptr<MlexNfaState>(StartState)), _endState(shared_ptr<MlexNfaState>(EndState)), MlexNfaWorkElement(MlexNfaWorkEleTypes::StateDiagram) {
+		MlexNfaStateDiagram(MlexNfaStatePtrS StartState, MlexNfaStatePtrS EndState)
+			:_startState(MlexNfaStatePtrS(StartState)), _endState(MlexNfaStatePtrS(EndState)), MlexNfaWorkElement(MlexNfaWorkEleTypes::StateDiagram) {
+		}
+
+		MlexNfaStateDiagram()
+			:MlexNfaWorkElement(MlexNfaWorkEleTypes::StateDiagram) {
 		}
 
 		/**
 		 * 获取初态
 		 */
-		shared_ptr<MlexNfaState> getStartState() {
+		MlexNfaStatePtrS getStartState() {
 			return _startState;
 		}
 
 		/**
 		 * 获取终态
 		 */
-		shared_ptr<MlexNfaState> getEndState() {
+		MlexNfaStatePtrS getEndState() {
 			return _endState;
 		}
 
@@ -245,7 +251,7 @@ namespace mlex {
 		 */
 		static shared_ptr<MlexNfaStateDiagram> contact(shared_ptr<MlexNfaStateDiagram> One, shared_ptr<MlexNfaStateDiagram> Another, bool join_front) {
 			if (join_front) {
-				//shared_ptr<MlexNfaState> myStartState = shared_ptr<MlexNfaState>(One->_startState);
+				//MlexNfaStatePtrS myStartState = MlexNfaStatePtrS(One->_startState);
 				//One._startState = Another._startState;
 				//One->_startState.swap(Another->_startState);
 				//Another._endState.addMove(0, myStartState);
@@ -265,8 +271,8 @@ namespace mlex {
 		 * @retval	新的状态图
 		 */
 		static shared_ptr<MlexNfaStateDiagram> select(vector<shared_ptr<MlexNfaStateDiagram>>Branchs) {
-			auto tmpStartState= shared_ptr<MlexNfaState>(new MlexNfaState());
-			auto tmpEndState= shared_ptr<MlexNfaState>(new MlexNfaState());
+			auto tmpStartState= MlexNfaStatePtrS(new MlexNfaState());
+			auto tmpEndState= MlexNfaStatePtrS(new MlexNfaState());
 
 			for (auto iter : Branchs) {
 				tmpStartState->addMove(0, iter->_startState);
@@ -284,9 +290,8 @@ namespace mlex {
 		 * @retval	新的状态图
 		 */
 		static shared_ptr<MlexNfaStateDiagram> closure(shared_ptr<MlexNfaStateDiagram> One,MlexClosureCount& CCount) {
-			auto tmpStartState = shared_ptr<MlexNfaState>(new MlexNfaState());
-			auto tmpEndState = shared_ptr<MlexNfaState>(new MlexNfaState());
-
+			auto tmpStartState = MlexNfaStatePtrS(new MlexNfaState());
+			auto tmpEndState = MlexNfaStatePtrS(new MlexNfaState());
 
 			tmpStartState->addMove(0, One->_startState);
 			One->_endState->addMove(0, tmpEndState);
@@ -303,8 +308,6 @@ namespace mlex {
 	class MlexNfa {
 
 	private:
-		//所有的正则表达式
-		MlexRegexp& _regExps;
 		//状态图集合
 		vector<shared_ptr<MlexNfaStateDiagram>> _dirgramVector;
 
@@ -313,8 +316,8 @@ namespace mlex {
 		 * @param	Input		输入字符
 		 */
 		shared_ptr<MlexNfaStateDiagram> createBasicStateDiagram(char Input) {
-			auto tmpStartState = shared_ptr<MlexNfaState>(new MlexNfaState());
-			auto tmpEndState = shared_ptr<MlexNfaState>(new MlexNfaState());
+			auto tmpStartState = MlexNfaStatePtrS(new MlexNfaState());
+			auto tmpEndState = MlexNfaStatePtrS(new MlexNfaState());
 	
 			tmpStartState->addMove(Input, tmpEndState);
 
@@ -326,6 +329,11 @@ namespace mlex {
 			char end, start;
 
 			while (s[pos] != ']') {
+				if (s[pos] == 0) {
+					throw(MlexException(MlexExceptionLevel::Error, MlexExceptionType::InvalidExpression, "缺少]。"));
+					return cv;
+				}
+
 				start = s[pos];
 				pos++;
 				
@@ -338,9 +346,15 @@ namespace mlex {
 					end = start;
 				}
 
+				if (end < start) {
+					throw(MlexException(MlexExceptionLevel::Error, MlexExceptionType::InvalidExpression, "[]表达式内顺序错误。"));
+					return cv;
+				}
+
 				//匹配失败
 				if ((!isLetter(start) && !isNumberic(start)) ||
 					(!isLetter(end) && !isNumberic(end))) {
+					throw(MlexException(MlexExceptionLevel::Error, MlexExceptionType::InvalidExpression, "[]表达式内字符非法。"));
 					return cv;
 				}
 
@@ -361,11 +375,13 @@ namespace mlex {
 		bool handlerContact(stack<shared_ptr<MlexNfaStateDiagram>>& stateDiagrams) {
 			shared_ptr<MlexNfaStateDiagram> sd1 = move(stateDiagrams.top());
 			if (sd1 == false) {
+				throw(MlexException(MlexExceptionLevel::Error, MlexExceptionType::InvalidExpression, "错误的连接运算符。"));
 				return false;
 			}
 			stateDiagrams.pop();
 			shared_ptr<MlexNfaStateDiagram> sd2 = move(stateDiagrams.top());
 			if (sd2 == false) {
+				throw(MlexException(MlexExceptionLevel::Error, MlexExceptionType::InvalidExpression, "错误的连接运算符。"));
 				return false;
 			}
 			stateDiagrams.pop();
@@ -380,8 +396,10 @@ namespace mlex {
 		 * @param	selects				选择分支
 		 */
 		bool handlerSelect(stack<shared_ptr<MlexNfaStateDiagram>>& stateDiagrams, vector<shared_ptr<MlexNfaStateDiagram>>& selects) {
-			if (selects.size() == 0)
+			if (selects.size() == 0) {
+				throw(MlexException(MlexExceptionLevel::Error, MlexExceptionType::InvalidExpression, "错误的选择运算符。"));
 				return false;
+			}
 			shared_ptr<MlexNfaStateDiagram> newSd = move(MlexNfaStateDiagram::select(selects));
 			selects.clear();
 			stateDiagrams.emplace(newSd);
@@ -395,7 +413,8 @@ namespace mlex {
 		 */
 		bool handlerClosure(stack<shared_ptr<MlexNfaStateDiagram>>& stateDiagrams,shared_ptr<MlexNfaReOperator>& op) {
 			shared_ptr<MlexNfaStateDiagram> sd = move(stateDiagrams.top());
-			if (sd == false) {
+			if (sd == 0) {
+				throw(MlexException(MlexExceptionLevel::Error, MlexExceptionType::InvalidExpression, "错误的闭包运算符。"));
 				return false;
 			}
 			stateDiagrams.pop();
@@ -416,8 +435,9 @@ namespace mlex {
 			if (op->_opType == MlexReOpTypes::closure) {
 				while (!opStack.empty()) {
 					auto top_op = opStack.top();
-					if (top_op->_opType < MlexReOpTypes::closure || top_op->_opType == MlexReOpTypes::lbracket)
+					if (top_op->_opType < MlexReOpTypes::closure || top_op->_opType == MlexReOpTypes::lbracket) {
 						break;
+					}
 
 					opStack.pop();
 					workStack.emplace_back(top_op);
@@ -431,8 +451,9 @@ namespace mlex {
 				shared_ptr<MlexNfaReOperator> top_op;
 				while (!opStack.empty()) {
 					top_op = opStack.top();
-					if (top_op->_opType < MlexReOpTypes::contact || top_op->_opType == MlexReOpTypes::lbracket)
+					if (top_op->_opType < MlexReOpTypes::contact || top_op->_opType == MlexReOpTypes::lbracket) {
 						break;
+					}
 
 					opStack.pop();
 					workStack.emplace_back(top_op);
@@ -446,8 +467,9 @@ namespace mlex {
 				shared_ptr<MlexNfaReOperator> top_op;
 				while (!opStack.empty()) {
 					top_op = opStack.top();
-					if (top_op->_opType < MlexReOpTypes::select || top_op->_opType == MlexReOpTypes::lbracket)
+					if (top_op->_opType < MlexReOpTypes::select || top_op->_opType == MlexReOpTypes::lbracket) {
 						break;
+					}
 
 					opStack.pop();
 					workStack.emplace_back(top_op);
@@ -465,14 +487,16 @@ namespace mlex {
 				shared_ptr<MlexNfaReOperator> top_op;
 				while (!opStack.empty()) {
 					top_op = opStack.top();
-					if (top_op->_opType == MlexReOpTypes::lbracket)
+					if (top_op->_opType == MlexReOpTypes::lbracket) {
 						break;
+					}
 
 					opStack.pop();
 					workStack.emplace_back(top_op);
 				}
 				if (opStack.size() == 0 || opStack.top()->_opType != MlexReOpTypes::lbracket) {
-					throw(0);
+					throw(MlexException(MlexExceptionLevel::Error, MlexExceptionType::InvalidExpression, "未闭合()。"));
+					return;
 				}
 				opStack.pop();
 
@@ -481,6 +505,8 @@ namespace mlex {
 		}
 
 	public:
+		//所有的正则表达式
+		MlexRegexp& _regExps;
 		//NFA的字母表
 		vector<char> _char_tab;
 		//NFA的最终转态转换图
@@ -500,8 +526,10 @@ namespace mlex {
 		 * 然后将后缀表达式组装为NFA状态图
 		 */
 		shared_ptr<MlexNfaStateDiagram> convertReToNfa(string& re) {
+
 			stack<shared_ptr<MlexNfaReOperator>> opStack;
 			vector<shared_ptr<MlexNfaWorkElement>> workStack;
+			auto emptySd = shared_ptr<MlexNfaStateDiagram>(new MlexNfaStateDiagram());
 
 			//循环遍历正则表达式并构造表达式的后缀形式
 			for (size_t i = 0;i < re.length();i++) {
@@ -520,7 +548,7 @@ namespace mlex {
 
 				switch (re[i])
 				{
-				//重复0-n次的闭包
+					//重复0-n次的闭包
 				case '*':
 				{
 					pushOperator(shared_ptr<MlexNfaReOperator>(new MlexNfaReOperator(0, 0xFFFF)), opStack, workStack);
@@ -555,8 +583,8 @@ namespace mlex {
 
 						//向字母表添加元素
 						_char_tab.emplace_back(iter);
-						auto start = shared_ptr<MlexNfaState>(new MlexNfaState());
-						auto end = shared_ptr<MlexNfaState>(new MlexNfaState());
+						auto start = MlexNfaStatePtrS(new MlexNfaState());
+						auto end = MlexNfaStatePtrS(new MlexNfaState());
 						start->addMove(iter, end);
 						shared_ptr<MlexNfaStateDiagram> sd = shared_ptr<MlexNfaStateDiagram>(new MlexNfaStateDiagram(start, end));
 						selected.emplace_back(sd);
@@ -575,7 +603,8 @@ namespace mlex {
 				case ')':
 				{
 					if (opStack.top()->_opType != MlexReOpTypes::contact) {
-						throw(string(re + ":)前含有错误运算符。"));
+						throw(MlexException(MlexExceptionLevel::Error, MlexExceptionType::InvalidExpression, ")前含有错误运算符。"));
+						return emptySd;
 					}
 					opStack.pop();
 					pushOperator(shared_ptr<MlexNfaReOperator>(new MlexNfaReOperator(MlexReOpTypes::rbracket)), opStack, workStack);
@@ -585,7 +614,8 @@ namespace mlex {
 				case '\\':
 				{
 					if (!isValidChar(re[i + 1])) {
-						throw(string(re + ":包含非法字符。"));
+						throw(MlexException(MlexExceptionLevel::Error, MlexExceptionType::UnrecognizedChar));
+						return emptySd;
 					}
 					i++;
 					_char_tab.emplace_back(re[i]);
@@ -641,24 +671,32 @@ namespace mlex {
 					shared_ptr<MlexNfaReOperator> opt;
 					opt = move(static_pointer_cast<MlexNfaReOperator>(ele));
 
+
 					switch (opt->_opType)
 					{
 					case MlexReOpTypes::closure:
-						handlerClosure(valStack, opt);
+						if (!handlerClosure(valStack, opt)) {
+							return emptySd;
+						}
 						break;
 					case MlexReOpTypes::contact:
-						handlerContact(valStack);
+						if (!handlerContact(valStack)) {
+							return emptySd;
+						}
 						break;
 					case MlexReOpTypes::select:
 						effSelect.emplace_back(valStack.top());
 						valStack.pop();
 						effSelect.emplace_back(valStack.top());
 						valStack.pop();
-						handlerSelect(valStack, effSelect);
+						if (!handlerSelect(valStack, effSelect)) {
+							return emptySd;
+						}
 						break;
 					default:
 						break;
 					}
+
 				}
 			}
 
@@ -672,15 +710,26 @@ namespace mlex {
 		shared_ptr<MlexNfaStateDiagram> convert() {
 			
 			vector<shared_ptr<MlexNfaStateDiagram>> reSds;
+			MlexRegexpContext re;
+			try {
 
-			for (size_t i = 0;i < _regExps.getReCount();i++) {
+				for (size_t i = 0;i < _regExps.getReCount();i++) {
 
-				MlexRegexpContext& re = _regExps.getRegExp(i);
-				auto diag = convertReToNfa(re._regExp);
-				diag->getEndState()->_oldre = re;
-				diag->getEndState()->_final = true;
-				reSds.emplace_back(diag);
+					re = _regExps.getRegExp(i);
+					auto diag = convertReToNfa(re._regExp);
+					diag->getEndState()->_oldre = re;
+					diag->getEndState()->_final = true;
+					reSds.emplace_back(diag);
+				}
 			}
+			catch (MlexException e) {
+
+				if (e._level == MlexExceptionLevel::Error) {
+					MlexExceptionStack.emplace_back(e);
+					throw(MlexException(MlexExceptionLevel::Error, MlexExceptionType::InvalidExpression, re._regExp + "表达式解析错误。"));
+				}
+			}
+
 
 			//去除字母表中重复元素
 			sort(_char_tab.begin(), _char_tab.end());
@@ -688,7 +737,6 @@ namespace mlex {
 
 			//所有re生成的NFA进行选择运算
 			_main_diagram = move(MlexNfaStateDiagram::select(reSds));
-			//_main_diagram->getEndState()->_final = true;
 
 			return _main_diagram;
 		}

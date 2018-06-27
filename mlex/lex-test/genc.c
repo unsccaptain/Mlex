@@ -6,8 +6,11 @@
 #define state_count 42
 #define input_count 73
 #define start_index 37
+
+char* mlex_char,mlex_next;
+
 int mlex_input_map[128] = {
--1,0,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,2,-1,-1,-1,-1,3,4,-1,5,-1,6,7,8,9,10,11,12,13,14,15,16,-1,-1,17,18,19,-1,-1,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,-1,-1,-1,-1,46,-1,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,-1,-1,-1,-1,73
+-1,0,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,2,-1,-1,-1,-1,3,4,-1,5,-1,6,7,8,9,10,11,12,13,14,15,16,-1,-1,17,18,19,-1,-1,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,-1,-1,-1,-1,46,-1,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,-1,-1,-1,-1,-1
 };
 
 int mlex_state_metrix[state_count][input_count + 1] = {
@@ -56,6 +59,7 @@ int mlex_state_metrix[state_count][input_count + 1] = {
 };
 
 int mlex_read(char* s){
+	mlex_char = s;
 	int s_idx = 0;
 	int c_idx = mlex_input_map[s[s_idx]];
 	int end_state, next = start_index, *next_vt = 0;
@@ -70,14 +74,13 @@ int mlex_read(char* s){
 		}
 		next_vt = mlex_state_metrix[next];
 		c_idx = mlex_input_map[s[++s_idx]];
+		if (s[s_idx] == 0){
+			break;
+		}
 	}
-	if (s[s_idx] != 0){
+	if (!(next_vt != 0 && next_vt[input_count] == 1))
 		return 0;
-	}
-	if (next_vt != 0 && next_vt[input_count] == 1)
-		return 1;
-	else
-		return 0;
+	mlex_next = s + s_idx;
 	switch(end_state){
 	case 0:
 		{return 5;}

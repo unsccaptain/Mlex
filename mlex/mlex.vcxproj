@@ -147,7 +147,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="dfa.h" />
+    <ClInclude Include="exception.h" />
     <ClInclude Include="gencode\mlex-genc.h" />
+    <ClInclude Include="gencode\mlex-gencpp.h" />
     <ClInclude Include="nfa.h" />
     <ClInclude Include="regexp.h" />
     <ClInclude Include="stdafx.h" />

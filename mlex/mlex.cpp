@@ -33,33 +33,40 @@ int main()
 
 	if (fs.good()) {
 
-		mlex::MlexRegexp regexp(fs);
+		try {
 
-		mlex::MlexNfa nfa(regexp);
+			mlex::MlexRegexp regexp(fs);
 
-		nfa.convert();
+			mlex::MlexNfa nfa(regexp);
 
-		mlex::MlexDfa dfa(nfa);
+			nfa.convert();
 
-		dfa.convert();
+			mlex::MlexDfa dfa(nfa);
 
-		dfa.simplify(false);
+			dfa.convert();
 
-		mlex::MlexCodeGen_C genc(dfa);
+			dfa.simplify(false);
 
-		fstream genf("lex-test\\genc.c", ios::out | ios::trunc);
+			mlex::MlexCodeGen_C genc(dfa);
 
-		genf << genc.gencode();
+			fstream genf("lex-test\\genc.c", ios::out | ios::trunc);
 
-		for (int i = 0;i < sizeof(test_strings) / sizeof(char*);i++) {
-			mlex::MlexRegexpContext re;
-			bool r = dfa.validateString(string(test_strings[i]), re);
-			if (r) {
-				printf("%s:匹配正确,表达式%s\n", test_strings[i], re._regExp.c_str());
+			genf << genc.gencode();
+
+			for (int i = 0;i < sizeof(test_strings) / sizeof(char*);i++) {
+				mlex::MlexRegexpContext re;
+				bool r = dfa.validateString(string(test_strings[i]), re);
+				if (r) {
+					printf("%s:匹配正确,表达式%s\n", test_strings[i], re._regExp.c_str());
+				}
+				else {
+					printf("%s:匹配错误\n", test_strings[i]);
+				}
 			}
-			else {
-				printf("%s:匹配错误\n", test_strings[i]);
-			}
+
+		}
+		catch (mlex::MlexException e) {
+			printf("%s\n", e.toString());
 		}
 	}
 

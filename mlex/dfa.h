@@ -135,13 +135,19 @@ namespace mlex {
 	class MlexDfa {
 
 	private:
-		MlexNfa _nfa;
-		map<uint32_t,vector<shared_ptr<MlexDfaState>>> _dfaStatesOnIdSummary;
+		//dfa中所有nfa之和的映射，用于加速dfa状态的查找
+		map<uint32_t, vector<shared_ptr<MlexDfaState>>> _dfaStatesOnIdSummary;
+		//dfa的id到dfa状态的映射
 		map<uint32_t, shared_ptr<MlexDfaState>> _dfaStatesMap;
+		//简化dfa的id到简化dfa的映射
 		map<uint32_t, shared_ptr<MlexDfaSimpleState>> _dfaSimpleStateMap;
 
 	public:
+		//对应的nfa
+		MlexNfa _nfa;
+		//dfa起始状态
 		shared_ptr<MlexDfaState> _startState;
+		//简化dfa的其实状态
 		shared_ptr<MlexDfaSimpleState> _sStartState;
 
 		MlexDfa(MlexNfa Nfa) :_nfa(Nfa) {
