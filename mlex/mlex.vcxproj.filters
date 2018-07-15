@@ -60,6 +60,9 @@
     <ClInclude Include="docopt\docopt_value.h">
       <Filter>docopt</Filter>
     </ClInclude>
+    <ClInclude Include="gencode\mlex-genc-Mparser.h">
+      <Filter>gencode</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

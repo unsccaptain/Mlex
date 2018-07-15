@@ -152,6 +152,7 @@
     <ClInclude Include="docopt\docopt_util.h" />
     <ClInclude Include="docopt\docopt_value.h" />
     <ClInclude Include="exception.h" />
+    <ClInclude Include="gencode\mlex-genc-Mparser.h" />
     <ClInclude Include="gencode\mlex-genc.h" />
     <ClInclude Include="gencode\mlex-gencpp.h" />
     <ClInclude Include="nfa.h" />

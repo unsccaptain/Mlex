@@ -5,16 +5,20 @@
 
 #include "gencode\mlex-genc.h"
 #include "docopt\docopt.h"
+#include <driverspecs.h>
 
 //mlex --lex LEX_FILE --matchfile FILE_NAME
 //--matchfile FILE_NAME	和指定文件匹配。
+
+#define ZZ(b)
+#define XX(a)	ZZ(##a)
 
 static const char USAGE[] =
 R"(mlex
 
     Usage:
       mlex --lex LEX_FILE --genlang LANG [--genre|--genlex] --output OUTPUT
-	  
+
     Options:
 		-h --help				显示帮助。
 		--lex LEX_FILE			LEX规则文件。
@@ -57,7 +61,7 @@ int main(int argc, const char** argv)
 		}
 
 		//获取生成类型
-		if (args.count("--genre") == 1) {
+		if (args["--genre"].asBool() == true) {
 			deep = true;
 		}
 		else {
