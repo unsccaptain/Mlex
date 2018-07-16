@@ -73,7 +73,7 @@ namespace mlex {
 
 			s = R"(
 			
-MpTokenType mlex_read_token(const char* s){
+JsTokenType mlex_read_token(const char* s){
 
 	mlex_char = s;
 	//×Ö·û´®µÄË÷Òý
@@ -109,7 +109,7 @@ MpTokenType mlex_read_token(const char* s){
 	}
 
 	if (!(next_vt != 0 && next_vt[input_count] == 1)){
-		return MpTokenType::TOKEN_UNKNOWN;
+		return JsTokenType::Unknown;
 	}
 
 	mlex_next = s + s_idx;
@@ -130,7 +130,7 @@ MpTokenType mlex_read_token(const char* s){
 			s += R"(
 
 	default:
-		return MpTokenType::TOKEN_UNKNOWN;
+		return JsTokenType::Unknown;
 
 )";
 

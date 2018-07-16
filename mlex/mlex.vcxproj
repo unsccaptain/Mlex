@@ -167,7 +167,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ReadMe.md" />
-    <None Include="lex-test\common.lex" />
+    <None Include="lex-test\common-1.lex" />
+    <None Include="lex-test\js.lex" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

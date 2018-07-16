@@ -1,4 +1,5 @@
 #pragma once
+#pragma once
 
 #include "../dfa.h"
 
@@ -11,8 +12,8 @@ namespace mlex {
 
 		string genHeader() {
 			string s;
-			s += "\n#include <stdlib.h>\n";
-			s += "\n#include <stdbool.h>\n";
+			s += "\n#include <stdlib.h>";
+			s += "\n#include <string.h>\n";
 			return s;
 		}
 
@@ -25,8 +26,10 @@ namespace mlex {
 			s += "#define state_count " + to_string(stateMap.size()) + "\n";
 			s += "#define input_count " + to_string(inputTable.size()) + "\n";
 			s += "#define start_index " + to_string(_dfa._sStartState->getStateId()) + "\n\n";
-			s += "char* mlex_char,mlex_next;" + string("\n\n");
+			s += "const char* mlex_char,*mlex_next;" + string("\n\n");
+			s += "char mlex_token[256];\n\n";
 			s += "int mlex_input_map[128] = {" + string("\n");
+
 			int counter = 0;
 			for (int i = 0;i<128;i++) {
 				if (inputTable[counter] == i) {
@@ -70,12 +73,15 @@ namespace mlex {
 
 			s = R"(
 			
-int mlex_read(char* s){
+JsTokenType mlex_read_token(const char* s){
 
 	mlex_char = s;
+	//字符串的索引
 	int s_idx = 0;
+	//字符在输入表中索引
 	int c_idx = mlex_input_map[s[s_idx]];
 	int end_state, next = start_index, *next_vt = 0;
+	memset(mlex_token, 0 , 256);
 
 	while ((c_idx != -1 || mlex_input_map[1] != -1)) {
 
@@ -103,14 +109,15 @@ int mlex_read(char* s){
 	}
 
 	if (!(next_vt != 0 && next_vt[input_count] == 1)){
-		return 0;
+		return JsTokenType::Unknown;
 	}
 
 	mlex_next = s + s_idx;
+	memcpy(mlex_token, s, s_idx);
 
 	switch(end_state){
 )";
-			
+
 			for (auto iter : _dfa.getDfaSimpleStateMap()) {
 				if (!iter.second->_final) {
 					continue;
@@ -119,6 +126,12 @@ int mlex_read(char* s){
 				s += "\t\t" + iter.second->_oldre._genCode + string("\n");
 				s += "\t\tbreak;\n";
 			}
+
+			s += R"(
+	default:
+		return JsTokenType::Unknown;
+
+)";
 
 			s += "\t}\n";
 
